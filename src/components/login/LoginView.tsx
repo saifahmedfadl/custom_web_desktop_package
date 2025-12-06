@@ -1,5 +1,3 @@
-'use client';
-
 import Image, { StaticImageData } from 'next/image';
 import React from 'react';
 import { useApp } from '../../context/AppContext';
@@ -49,10 +47,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
   // }, []);
 
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden flex" style={{ height: '80vh', width: '80vw' }}>
+    <div className="bg-white shadow-md rounded-lg overflow-hidden h-4/5 w-4/5 flex">
       {/* Left Panel */}
       <div 
-        className="text-white p-8 flex flex-col justify-center items-center relative"
+        className="text-white p-8 w-1/2 flex flex-col justify-center items-center relative"
         style={{ 
           backgroundColor: '#333333',
           backgroundImage: `url(${background.src})`,
@@ -60,11 +58,12 @@ export const LoginView: React.FC<LoginViewProps> = ({
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundBlendMode: 'overlay',
-          width: '50%',
+          width: '100%',
+          // height: '100%'
         }}
       >
-        <div style={{ marginBottom: '2rem' }}>
-          <div style={{ position: 'relative', width: '144px', height: '144px', marginBottom: '1rem' }}>
+        <div className="mb-8">
+          <div className="relative w-36 h-36 mb-4">
             <Image
               src={logo}
               alt="تطبيق المعلم"
@@ -124,8 +123,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
       </div>
 
       {/* Right Panel */}
-      <div style={{ width: '50%', backgroundColor: 'white', padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ marginBottom: '2rem' }}>
+      <div className="bg-white p-8 w-1/2 flex flex-col justify-center items-center">
+        <div className="mb-8">
           <CustomText
             text={isLoading ? "جاري التحميل..." : error ? "حدث خطأ" : "يرجى مسح رمز QR"}
             fontSize={18}

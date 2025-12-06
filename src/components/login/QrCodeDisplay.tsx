@@ -1,17 +1,6 @@
-'use client';
-
-import dynamic from 'next/dynamic';
 import React from 'react';
+import QRCode from 'react-qr-code';
 import { CustomText } from '../common/CustomText';
-
-// Dynamic import for QRCode to avoid SSR issues
-const QRCode = dynamic(
-  () => import('react-qr-code').then((mod) => mod.default),
-  { 
-    ssr: false,
-    loading: () => <div className="animate-pulse bg-gray-200 w-[200px] h-[200px]"></div>
-  }
-);
 
 interface QrCodeDisplayProps {
   qrId: string | null;

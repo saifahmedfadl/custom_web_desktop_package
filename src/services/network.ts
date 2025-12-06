@@ -5,7 +5,6 @@ class NetworkService {
   private initialized: boolean = false;
 
   constructor() {
-    // Only setup listeners on client side
     if (typeof window !== 'undefined') {
       this.online = navigator.onLine;
       this.setupListeners();
@@ -14,8 +13,8 @@ class NetworkService {
 
   private setupListeners(): void {
     if (typeof window === 'undefined' || this.initialized) return;
-    
     this.initialized = true;
+    
     window.addEventListener('online', () => {
       this.online = true;
     });
