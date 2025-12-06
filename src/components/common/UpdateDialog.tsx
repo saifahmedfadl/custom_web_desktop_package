@@ -70,4 +70,4 @@ export const UpdateDialog: React.FC<UpdateDialogProps> = ({
       </div>
     </div>
   );
-};
+}; 

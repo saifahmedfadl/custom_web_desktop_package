@@ -5,8 +5,6 @@
 
 // Advanced fingerprinting components
 const getCanvasFingerprint = (): string => {
-  if (typeof document === 'undefined') return 'ssr-mode';
-  
   try {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -31,8 +29,6 @@ const getCanvasFingerprint = (): string => {
 };
 
 const getSystemInfo = (): string => {
-  if (typeof window === 'undefined') return 'ssr-mode';
-  
   const nav = window.navigator;
   const screen = window.screen;
   return [
@@ -50,11 +46,6 @@ const getSystemInfo = (): string => {
 
 const getAudioFingerprint = (): Promise<string> => {
   return new Promise((resolve) => {
-    if (typeof window === 'undefined') {
-      resolve('ssr-mode');
-      return;
-    }
-    
     try {
       // @ts-ignore - Audio API variations across browsers
       const audioContext = window.AudioContext || window.webkitAudioContext;
@@ -112,10 +103,6 @@ const hashCode = (str: string): string => {
  * Generates a highly stable device ID based on multiple browser features
  */
 export const generateDeviceId = async (): Promise<string> => {
-  if (typeof window === 'undefined') {
-    return 'ssr-mode-device';
-  }
-  
   try {
     // Collect multiple fingerprinting components
     const systemInfo = getSystemInfo();
@@ -170,10 +157,6 @@ export const generateDeviceId = async (): Promise<string> => {
  * Uses an advanced fingerprinting technique for stability
  */
 export const getDeviceId = (): string => {
-  if (typeof window === 'undefined') {
-    return 'ssr-mode-device';
-  }
-  
   const storageKey = 'teacher_app_device_id';
   const deviceId = localStorage.getItem(storageKey);
   
@@ -193,4 +176,4 @@ export const getDeviceId = (): string => {
   }
   
   return deviceId;
-};
+}; 

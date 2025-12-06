@@ -84,4 +84,4 @@ export const useQrCode = () => {
     retryQrCode,
     resetQrCode,
   };
-};
+}; 

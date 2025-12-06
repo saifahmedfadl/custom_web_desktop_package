@@ -1,12 +1,10 @@
 type RetryCallback<T> = () => Promise<T>;
 
 class NetworkService {
-  private online: boolean = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  private online: boolean = navigator.onLine;
 
   constructor() {
-    if (typeof window !== 'undefined') {
-      this.setupListeners();
-    }
+    this.setupListeners();
   }
 
   private setupListeners(): void {
@@ -79,4 +77,4 @@ class NetworkService {
   }
 }
 
-export const networkService = new NetworkService();
+export const networkService = new NetworkService(); 

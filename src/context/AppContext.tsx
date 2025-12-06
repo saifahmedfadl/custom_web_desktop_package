@@ -1,13 +1,12 @@
 'use client';
 
 import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
-import { TeacherAppConfig } from '../config/types';
-import { QrModelWindows } from '../models/QrModel';
+import { AppConfig, QrModelWindows } from '../models/QrModel';
 import { apiService } from '../services/api';
 import { getDeviceId } from '../utils/device';
 
 interface AppContextType {
-  config: TeacherAppConfig | null;
+  config: AppConfig | null;
   deviceId: string;
   qrCode: QrModelWindows | null;
   isLoading: boolean;
@@ -15,33 +14,29 @@ interface AppContextType {
   setQrCode: (qrCode: QrModelWindows) => void;
   createQrCode: () => Promise<QrModelWindows | null>;
   retryConnection: () => void;
-  resetQrCodeData: () => void;
+  resetQrCodeData: () => void; // New function to completely reset QR data
+  //checkVersion: () => Promise<{updateRequired: boolean, url: string} | null>;
 }
 
-const defaultConfig: TeacherAppConfig = {
+const defaultConfig: AppConfig = {
   primaryColor: '#000000',
-  initializeFirebase: () => {},
+  initializeFirebase: () => {}, // Keeping for compatibility, but won't use it
   watchedOffline: false,
   nameAdmin: 'Teacher App',
   baseUrl: '',
-  usingApi: true,
+  usingApi: true, // Always use API as per requirements
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export interface AppProviderProps {
+export const AppProvider: React.FC<{
   children: ReactNode;
-  config?: TeacherAppConfig;
-  initialConfig?: Partial<TeacherAppConfig>;
-}
-
-export const AppProvider: React.FC<AppProviderProps> = ({ children, config, initialConfig }) => {
-  // Support both config and initialConfig for compatibility
-  const mergedConfig = {
+  initialConfig?: Partial<AppConfig>;
+}> = ({ children, initialConfig }) => {
+  const [config, ] = useState<AppConfig>({
     ...defaultConfig,
-    ...config,
     ...initialConfig,
-  };
+  });
   const [deviceId, setDeviceId] = useState<string>('');
   const [qrCode, setQrCode] = useState<QrModelWindows | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -51,15 +46,15 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, config, init
   const MAX_RETRIES = 10;
 
   useEffect(() => {
-    // Initialize API service with config
-    const baseUrl = mergedConfig.apiBaseUrl || mergedConfig.baseUrl;
-    if (baseUrl) {
-      apiService.initialize(baseUrl, mergedConfig.version);
-    }
-    
     // Initialize device ID
-    const id = getDeviceId();
+     // Initialize API service
+     if (config.baseUrl) {
+      apiService.initialize(config.baseUrl);
+    }
+    const id =  getDeviceId();
     setDeviceId(id);
+
+   
 
     // Cleanup polling timer when component unmounts
     return () => {
@@ -67,16 +62,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, config, init
         clearInterval(pollingTimer);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pollingTimer]);
+  }, [config, pollingTimer]);
   
-  // Create QR code once when device ID is set
+  // إنشاء useEffect منفصل لإنشاء رمز QR مرة واحدة عند تعيين معرف الجهاز
   useEffect(() => {
     if (deviceId) {
+      
       createQrCode();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deviceId]);
+  }, [deviceId,]); // يعتمد فقط على تغيير معرف الجهاز
+ 
 
   const createQrCode = async (): Promise<QrModelWindows | null> => {
     setIsLoading(true);
@@ -218,10 +213,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, config, init
     retryCountRef.current = 0;
     setIsLoading(false);
     createQrCode();
+    
   };
 
   const value: AppContextType = {
-    config: mergedConfig,
+    config,
     deviceId,
     qrCode,
     isLoading,
@@ -230,6 +226,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, config, init
     createQrCode,
     retryConnection,
     resetQrCodeData,
+    // checkVersion,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -244,3 +241,9 @@ export const useApp = (): AppContextType => {
   
   return context;
 };
+
+export const initializeDesktopTeacher = (config: Partial<AppConfig>): void => {
+  // This function will be exported from the package for initialization
+  // We're not using Firebase initialization as per requirements
+  console.log('Desktop Teacher app initialized with config:', config);
+}; 

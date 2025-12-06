@@ -158,4 +158,4 @@ export const useVideoProgress = (videoData: QrModelWindows | null) => {
     setError,
     resetProgress,
   };
-};
+}; 

@@ -20,9 +20,10 @@ export const LoginController: React.FC<LoginControllerProps> = ({
   background,
 }) => {
   const router = useRouter();
-  const { qrCode, error: appError } = useApp();
-  const [deviceId] = useState<string>('');
+  const { qrCode, error: appError,   } = useApp();
+  const [deviceId, ] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  // const [updateInfo, setUpdateInfo] = useState<{updateRequired: boolean, url: string} | null>(null);
   const {
     qrId,
     polling,
@@ -31,6 +32,21 @@ export const LoginController: React.FC<LoginControllerProps> = ({
     createQrCode,
     retryQrCode,
   } = useQrCode();
+
+  // Initialize version check and device ID on mount
+  // useEffect(() => {
+  //   const checkAppVersion = async () => {
+  //     const versionInfo = await checkVersion();
+  //     setUpdateInfo(versionInfo);
+  //   };
+    
+  //   // Get the device ID
+  //   const id = getDeviceId();
+  //   setDeviceId(id);
+    
+  //   // Check app version
+  //   checkAppVersion();
+  // }, [checkVersion]);
 
   // Navigate to video player when a video is available
   useEffect(() => {
@@ -80,6 +96,35 @@ export const LoginController: React.FC<LoginControllerProps> = ({
     setError(null);
   };
 
+  // const handleUpdate = () => {
+  //   // Open download URL in new tab
+  //   if (updateInfo?.url) {
+  //     window.open(updateInfo.url, '_blank');
+  //   }
+  // };
+
+  // const handleCancelUpdate = () => {
+  //   // Continue using the app if not a forced update
+  //   console.log('Update cancelled');
+  // };
+
+  // If force update is required, don't allow access to the app
+  // if (updateInfo?.updateRequired) {
+  //   return (
+  //     <UpdateDialog
+  //       version={{
+  //         version: 'Latest Version',
+  //         downloadUrl: updateInfo.url,
+  //         forceUpdate: true,
+  //       }}
+  //       currentVersion={version}
+  //       forceUpdate={true}
+  //       onUpdate={handleUpdate}
+  //       onCancel={handleCancelUpdate}
+  //     />
+  //   );
+  // }
+
   return (
     <>
       <LoginView
@@ -102,4 +147,4 @@ export const LoginController: React.FC<LoginControllerProps> = ({
       )}
     </>
   );
-};
+}; 

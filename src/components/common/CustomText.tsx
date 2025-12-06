@@ -37,4 +37,4 @@ export const CustomText: React.FC<CustomTextProps> = ({
       {text}
     </div>
   );
-};
+}; 

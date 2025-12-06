@@ -1,12 +1,6 @@
-'use client';
-
 import React from 'react';
+import QRCode from 'react-qr-code';
 import { CustomText } from '../common/CustomText';
-
-// Dynamic import to avoid SSR issues with react-qr-code
-const QRCodeComponent = React.lazy(() => 
-  import('react-qr-code').then(mod => ({ default: mod.default }))
-);
 
 interface QrCodeDisplayProps {
   qrId: string | null;
@@ -27,14 +21,12 @@ export const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ qrId, polling }) =
         />
       ) : (
         <>
-          <React.Suspense fallback={<div className="animate-pulse bg-gray-200 w-[200px] h-[200px]"></div>}>
-            <QRCodeComponent 
-              value={qrId}
-              size={200}
-              level="H"
-              className="mb-2"
-            />
-          </React.Suspense>
+          <QRCode 
+            value={qrId}
+            size={200}
+            level="H"
+            className="mb-2"
+          />
           {polling && (
             <div className="mt-2">
               <CustomText
@@ -48,4 +40,4 @@ export const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ qrId, polling }) =
       )}
     </div>
   );
-};
+}; 

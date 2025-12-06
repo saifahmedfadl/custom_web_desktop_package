@@ -27,6 +27,26 @@ export const LoginView: React.FC<LoginViewProps> = ({
   background,
 }) => {
   const { error, isLoading } = useApp();
+  // استخدام isLoading من AppContext بدلاً من حالة محلية
+
+  // // Generate QR code only once when component mounts
+  // useEffect(() => {
+  //   const initializeQrCode = async () => {
+  //     try {
+  //       // Add a small delay for better user experience
+  //       await new Promise(resolve => setTimeout(resolve, 500));
+  //       // Use onGenerateQrCode instead of onRetryQrCode for initial load
+  //       await onGenerateQrCode();
+  //     } catch (err) {
+  //       console.error('Error initializing QR code:', err);
+  //     } finally {
+  //       setIsInitializing(false);
+  //     }
+  //   };
+
+  //   initializeQrCode();
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   return (
     <div className="bg-white shadow-md rounded-lg overflow-hidden h-4/5 w-4/5 flex">
@@ -41,6 +61,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           backgroundRepeat: 'no-repeat',
           backgroundBlendMode: 'overlay',
           width: '100%',
+          // height: '100%'
         }}
       >
         <div className="mb-8">
@@ -68,6 +89,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
             fontSize={14}
             color="white"
             direction="rtl"
+            //padding
             className="mb-2"
           />
           <CustomText
@@ -93,6 +115,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           />
         </div>
         <div className="mt-auto">
+         
           <CustomText
             text={`الإصدار: ${version}`}
             fontSize={12}
@@ -129,15 +152,16 @@ export const LoginView: React.FC<LoginViewProps> = ({
           <QrCodeDisplay qrId={qrId} polling={polling} />
         )}
         
-        {!isLoading && error && (
+        {!isLoading &&error && (
           <CustomButton
             text={error || !qrId ? "إعادة المحاولة" : "تحديث رمز QR"}
             onClick={onRetryQrCode}
             disabled={polling && !error}
+            //padding
             className="mt-4"
           />
         )}
       </div>
     </div>
   );
-};
+}; 

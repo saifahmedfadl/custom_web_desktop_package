@@ -7,15 +7,14 @@ class ApiService {
   private currentVersion: string = '1.0.0';
 
   initialize(baseUrl: string, version?: string): void {
+    if (version) {
+      this.currentVersion = version;
+    }
     // Always use the Next.js API route to avoid CORS issues on both local and production
     // This works with our next.config.js rewrites configuration
     const proxyUrl = '/api';
     
     this.baseUrl = baseUrl; // Keep the original for reference
-    if (version) {
-      this.currentVersion = version;
-    }
-    
     this.api = axios.create({
       baseURL: proxyUrl,
       timeout: 10000,
@@ -26,10 +25,6 @@ class ApiService {
       }
     });
     console.log(`API service initialized with base URL: ${baseUrl} (via proxy)`);
-  }
-
-  getBaseUrl(): string {
-    return this.baseUrl;
   }
 
   // QR Code Related Methods
@@ -70,6 +65,25 @@ class ApiService {
       return null;
     }
   }
+
+  // Version Checking - match the endpoint and format from Flutter
+  // async checkVersion(): Promise<{updateRequired: boolean, url: string} | null> {
+  //   if (!this.api) return null;
+    
+  //   try {
+  //     const response = await this.api.post('/checkVersion', {
+  //       version: this.currentVersion
+  //     });
+      
+  //     return {
+  //       updateRequired: response.data.updateRequired,
+  //       url: response.data.url
+  //     };
+  //   } catch (error) {
+  //     console.error('Error checking version via API', error);
+  //     return null;
+  //   }
+  // }
 
   // Student Progress Tracking - Match Flutter implementation
   async updateVideoProgress(

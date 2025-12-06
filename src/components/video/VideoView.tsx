@@ -11,6 +11,12 @@ export const VideoView: React.FC = () => {
   const { qrCode, resetQrCodeData } = useApp();
 
   // Handle back button click
+  // Handle back button click
+  // Handle back button click
+  // Handle back button click
+  // Handle back button click
+  // Handle back button click
+  // Handle back button click
   const handleBackClick = () => {
     // Completely reset QR code data before navigating back
     resetQrCodeData();
@@ -39,21 +45,21 @@ export const VideoView: React.FC = () => {
       {/* Header */}
       <div className="bg-gray-900 text-white h-[70px] flex items-center justify-between px-4">
         <div className="flex items-center">
-          <CustomButton
-            text="رجوع"
-            onClick={handleBackClick}
-            fontSize={14}
-            textColor="white"
-            borderRadius={8}
-            padding="8px 16px"
-            bold={true}
-            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 transition-colors duration-200"
-            iconLeft={
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            }
-          />
+        <CustomButton
+  text="رجوع"
+  onClick={handleBackClick}
+  fontSize={14}
+  textColor="white"
+  borderRadius={8}
+  padding="8px 16px"
+  bold={true}
+  className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 transition-colors duration-200"
+  iconLeft={
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+    </svg>
+  }
+/>
         </div>
         <div className="flex-1 flex justify-center">
           <CustomText
@@ -83,6 +89,8 @@ export const VideoView: React.FC = () => {
             title="YouTube Video Player"
           />
         </div>
+        
+    
       </div>
     </div>
   );

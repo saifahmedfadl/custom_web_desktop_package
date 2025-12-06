@@ -54,4 +54,4 @@ export const CustomSnackBar: React.FC<CustomSnackBarProps> = ({
       <CustomText text={message} color="white" fontSize={14} />
     </div>
   );
-};
+}; 

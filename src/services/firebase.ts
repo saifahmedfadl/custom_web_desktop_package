@@ -1,35 +1,30 @@
 import { FirebaseApp, initializeApp } from 'firebase/app';
 import {
-    Firestore,
-    Unsubscribe,
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    getFirestore,
-    onSnapshot,
-    setDoc,
-    updateDoc
+  Firestore,
+  Unsubscribe,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  getFirestore,
+  onSnapshot,
+  setDoc,
+  updateDoc
 } from 'firebase/firestore';
-import { FirebaseConfig } from '../config/types';
 import { QrModelWindows, StudentData, WindowsVersion } from '../models/QrModel';
 
 class FirebaseService {
   private app: FirebaseApp | null = null;
   private db: Firestore | null = null;
 
-  initialize(config: FirebaseConfig): void {
+  initialize(initializeFirebaseFn: () => void): void {
     try {
-      this.app = initializeApp(config);
+      initializeFirebaseFn();
+      this.app = initializeApp({} as any); // This is just a placeholder, the actual app will be initialized by the client
       this.db = getFirestore(this.app);
-      console.log('Firebase initialized successfully');
     } catch (error) {
       console.error('Error initializing Firebase', error);
     }
-  }
-
-  isInitialized(): boolean {
-    return this.db !== null;
   }
 
   // QR Code Related Methods
@@ -139,4 +134,4 @@ class FirebaseService {
   }
 }
 
-export const firebaseService = new FirebaseService();
+export const firebaseService = new FirebaseService(); 

@@ -1,4 +1,4 @@
-export interface VideoProgressState {
+export interface VideoProgress {
   progress: number;
   videoId: string;
   timestamp: number;
@@ -22,4 +22,4 @@ export interface VideoState {
   loading: boolean;
   error: string | null;
   thresholds: VideoThresholds;
-}
+} 

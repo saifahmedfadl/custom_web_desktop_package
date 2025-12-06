@@ -1,3 +1,3 @@
-export * from './device';
-export * from './formatting';
+export { getDeviceId } from './device';
+export { containsRTL, formatPercentage, formatText, formatTime } from './formatting';
 

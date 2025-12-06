@@ -1,25 +1,32 @@
-// Main entry point for the teacher web desktop package
+// Login Components
+export { LoginController } from './components/login/LoginController';
+export { LoginView } from './components/login/LoginView';
+export { QrCodeDisplay } from './components/login/QrCodeDisplay';
 
-// Config exports
-export * from './config';
-export { ConfigProvider, useApiBaseUrl, useAppConfig, useConfig } from './config/context';
-export type { AssetsConfig, FirebaseConfig, TeacherAppConfig } from './config/types';
+// Video Components
+export { VideoView } from './components/video/VideoView';
 
-// Context exports
-export { AppProvider, useApp } from './context';
-export type { AppProviderProps } from './context';
+// Common Components
+export { CustomButton } from './components/common/CustomButton';
+export { CustomSnackBar } from './components/common/CustomSnackBar';
+export { CustomText } from './components/common/CustomText';
 
-// Components exports
-export * from './components';
+// Context & Providers
+export { AppProvider, useApp } from './context/AppContext';
 
-// Hooks exports
-export * from './hooks';
+// Hooks
+export { useQrCode } from './hooks/useQrCode';
+export { useVideoProgress } from './hooks/useVideoProgress';
 
-// Services exports
-export { Endpoints, apiService, firebaseService, networkService } from './services';
+// Services
+export { apiService } from './services/api';
+export { firebaseService } from './services/firebase';
+export { networkService } from './services/network';
 
-// Models exports
-export * from './models';
+// Utils
+export { getDeviceId } from './utils/device';
+export { containsRTL, formatPercentage, formatText, formatTime } from './utils/formatting';
 
-// Utils exports
-export * from './utils';
+// Models
+export type { AppConfig, QrModelWindows, StudentData, WindowsVersion } from './models/QrModel';
+export type { VideoProgress, VideoState, VideoThresholds } from './models/VideoModel';

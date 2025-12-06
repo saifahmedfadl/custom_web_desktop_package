@@ -33,3 +33,15 @@ export interface WindowsVersion {
   downloadUrl: string;
   forceUpdate: boolean;
 }
+
+export interface AppConfig {
+  primaryColor: string;
+  initializeFirebase: () => void;
+  watchedOffline: boolean;
+  nameAdmin: string;
+  baseUrl: string;
+  usingApi: boolean;
+  logo?: string; // Path to logo image
+  backgroundImage?: string; // Path to background image
+  version?: string; // App version
+} 

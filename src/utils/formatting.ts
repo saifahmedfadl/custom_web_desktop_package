@@ -1,5 +1,3 @@
-import type { CSSProperties } from 'react';
-
 /**
  * Formats text according to specified alignment and direction
  */
@@ -7,7 +5,7 @@ export const formatText = (
   text: string,
   direction: 'rtl' | 'ltr' = 'ltr',
   alignment: 'left' | 'right' | 'center' = 'left'
-): { text: string; style: CSSProperties } => {
+): { text: string; style: React.CSSProperties } => {
   return {
     text,
     style: {
@@ -49,4 +47,4 @@ export const formatPercentage = (value: number, decimals: number = 0): string =>
   
   const percentage = Math.min(100, Math.max(0, value));
   return `${percentage.toFixed(decimals)}%`;
-};
+}; 
