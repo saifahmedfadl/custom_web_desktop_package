@@ -13,7 +13,7 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom', 'next', 'react-qr-code'],
+  external: ['react', 'react-dom', 'next'],
   treeshake: true,
   minify: false,
 });
