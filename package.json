@@ -41,6 +41,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "lint": "eslint src/",
+    "prepare": "npm run build",
     "prepublishOnly": "npm run build",
     "publish:npm": "npm publish --access public",
     "publish:github": "npm publish --registry=https://npm.pkg.github.com"
@@ -81,7 +82,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nexwavedev1/teacher-web-desktop-package.git"
+    "url": "https://github.com/saifahmedfadl/custom_web_desktop_package.git"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/"
