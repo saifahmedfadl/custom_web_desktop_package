@@ -1,4 +1,4 @@
-import QRCode from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import React from 'react';
 import { CustomText } from '../common/CustomText';
 
@@ -21,7 +21,7 @@ export const QrCodeDisplay: React.FC<QrCodeDisplayProps> = ({ qrId, polling }) =
         />
       ) : (
         <>
-          <QRCode 
+          <QRCodeSVG 
             value={qrId}
             size={200}
             level="H"
