@@ -124,8 +124,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
       </div>
 
       {/* Right Panel */}
-      <div className="bg-white p-8 flex flex-col justify-center items-center" style={{ width: '50%' }}>
-        <div className="mb-8">
+      <div style={{ width: '50%', backgroundColor: 'white', padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+        <div style={{ marginBottom: '2rem' }}>
           <CustomText
             text={isLoading ? "جاري التحميل..." : error ? "حدث خطأ" : "يرجى مسح رمز QR"}
             fontSize={18}
