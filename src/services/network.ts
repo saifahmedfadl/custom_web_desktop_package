@@ -1,13 +1,21 @@
 type RetryCallback<T> = () => Promise<T>;
 
 class NetworkService {
-  private online: boolean = navigator.onLine;
+  private online: boolean = true;
+  private initialized: boolean = false;
 
   constructor() {
-    this.setupListeners();
+    // Only setup listeners on client side
+    if (typeof window !== 'undefined') {
+      this.online = navigator.onLine;
+      this.setupListeners();
+    }
   }
 
   private setupListeners(): void {
+    if (typeof window === 'undefined' || this.initialized) return;
+    
+    this.initialized = true;
     window.addEventListener('online', () => {
       this.online = true;
     });
