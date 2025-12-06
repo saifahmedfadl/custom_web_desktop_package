@@ -49,10 +49,10 @@ export const LoginView: React.FC<LoginViewProps> = ({
   // }, []);
 
   return (
-    <div className="bg-white shadow-md rounded-lg overflow-hidden h-4/5 w-4/5 flex">
+    <div className="bg-white shadow-md rounded-lg overflow-hidden flex" style={{ height: '80vh', width: '80vw' }}>
       {/* Left Panel */}
       <div 
-        className="text-white p-8 w-1/2 flex flex-col justify-center items-center relative"
+        className="text-white p-8 flex flex-col justify-center items-center relative"
         style={{ 
           backgroundColor: '#333333',
           backgroundImage: `url(${background.src})`,
@@ -60,8 +60,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           backgroundBlendMode: 'overlay',
-          width: '100%',
-          // height: '100%'
+          width: '50%',
         }}
       >
         <div className="mb-8">
@@ -125,7 +124,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
       </div>
 
       {/* Right Panel */}
-      <div className="bg-white p-8 w-1/2 flex flex-col justify-center items-center">
+      <div className="bg-white p-8 flex flex-col justify-center items-center" style={{ width: '50%' }}>
         <div className="mb-8">
           <CustomText
             text={isLoading ? "جاري التحميل..." : error ? "حدث خطأ" : "يرجى مسح رمز QR"}
