@@ -63,8 +63,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
           width: '50%',
         }}
       >
-        <div className="mb-8">
-          <div className="relative w-36 h-36 mb-4">
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ position: 'relative', width: '144px', height: '144px', marginBottom: '1rem' }}>
             <Image
               src={logo}
               alt="تطبيق المعلم"
