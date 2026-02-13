@@ -44,6 +44,14 @@ export const VideoView: React.FC = () => {
   // Extract video-stream server ID from the HLS URL
   const videoStreamId = hasHlsVideo ? extractVideoStreamId(hlsUrl!) : null;
 
+  // Debug: log the actual values to diagnose video ID issues
+  if (typeof window !== 'undefined') {
+    console.log('[VideoView] hlsUrl:', hlsUrl);
+    console.log('[VideoView] videoStreamId extracted:', videoStreamId);
+    console.log('[VideoView] videoStreamToken:', videoStreamToken);
+    console.log('[VideoView] qrCode.videoModel:', JSON.stringify(qrCode.videoModel));
+  }
+
   // Build the iframe URL for the video-stream player (same as dashboard)
   const playerBaseUrl = videoStreamBaseUrl.replace(/\/api\/v1$/, '');
   const playerIframeUrl = videoStreamId
