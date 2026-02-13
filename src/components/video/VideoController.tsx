@@ -1,12 +1,12 @@
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useVideoProgress } from '../../hooks/useVideoProgress';
 import { formatPercentage, formatTime } from '../../utils/formatting';
 import { CustomButton } from '../common/CustomButton';
 import { CustomSnackBar } from '../common/CustomSnackBar';
 import { CustomText } from '../common/CustomText';
-import { YouTubePlayer } from './YouTubePlayer';
+import { CustomVideoPlayer } from './CustomVideoPlayer';
 
 interface VideoControllerProps {
   onBack: () => void;
@@ -14,8 +14,8 @@ interface VideoControllerProps {
 
 export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
   const router = useRouter();
-  const { qrCode } = useApp();
-  const { videoState, updateProgress, setPlaying, setLoading, setError, resetProgress } = useVideoProgress(qrCode);
+  const { qrCode, config } = useApp();
+  const { videoState, updateProgress, setPlaying, setLoading, setError } = useVideoProgress(qrCode);
   const [showMessage, setShowMessage] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -25,30 +25,27 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
     }
   }, [qrCode, router]);
 
-  const handleProgress = (currentTime: number, duration: number) => {
+  const handleProgress = useCallback((currentTime: number, duration: number, progressPct: number) => {
     updateProgress(currentTime, duration);
-  };
+  }, [updateProgress]);
 
-  const handleStateChange = (state: number) => {
-    // YouTube states: -1 (unstarted), 0 (ended), 1 (playing), 2 (paused), 3 (buffering), 5 (video cued)
-    setPlaying(state === 1);
-    setLoading(state === 3);
+  const handleStateChange = useCallback((state: 'playing' | 'paused' | 'buffering' | 'ended' | 'error') => {
+    setPlaying(state === 'playing');
+    setLoading(state === 'buffering');
     
-    if (state === 0) {
-      // Video ended
-      showNotification('Video completed');
+    if (state === 'ended') {
+      showNotification('اكتمل الفيديو');
     }
-  };
+  }, [setPlaying, setLoading]);
 
-  const handleReady = () => {
+  const handleReady = useCallback((duration: number) => {
     setLoading(false);
-    showNotification('Video ready to play');
-  };
+  }, [setLoading]);
 
-  const handleError = (error: Error) => {
-    setError(error.message);
-    showNotification(`Error: ${error.message}`);
-  };
+  const handleError = useCallback((error: string) => {
+    setError(error);
+    showNotification(`خطأ: ${error}`);
+  }, [setError]);
 
   const showNotification = (msg: string) => {
     setMessage(msg);
@@ -60,7 +57,7 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center">
         <CustomText
-          text="No video data available. Redirecting..."
+          text="لا يوجد بيانات فيديو متاحة. جاري إعادة التوجيه..."
           fontSize={18}
           color="black"
         />
@@ -68,8 +65,10 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
     );
   }
 
-  // Use YouTube ID from QR code, or fallback to videoID if youtubeId not available
-  const youtubeVideoId = qrCode.youtubeId || qrCode.videoID;
+  const videoStreamBaseUrl = config?.videoStreamBaseUrl;
+  const videoStreamToken = config?.videoStreamToken;
+  const hlsUrl = qrCode.videoModel?.hlsVideo;
+  const hasCustomPlayer = !!(videoStreamBaseUrl && qrCode.videoID) || !!hlsUrl;
 
   return (
     <div className="flex flex-col h-full">
@@ -77,14 +76,14 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
       <div className="bg-gray-900 text-white h-[70px] flex items-center justify-between px-4">
         <div className="flex items-center">
           <CustomButton
-            text="← Back"
+            text="← رجوع"
             onClick={onBack}
             fontSize={14}
           />
         </div>
         <div className="flex-1 flex justify-center">
           <CustomText
-            text={qrCode.videoName || 'Video Player'}
+            text={qrCode.videoName || 'مشغل الفيديو'}
             fontSize={18}
             color="white"
             bold={true}
@@ -96,29 +95,35 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
       {/* Video container */}
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div 
-          className="relative bg-black rounded-md w-full overflow-hidden"
-          style={{ 
-            maxWidth: '1000px', 
-            aspectRatio: '16/9'
-          }}
+          className="w-full"
+          style={{ maxWidth: '1000px' }}
         >
-          {videoState.loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-70 z-10">
-              <CustomText
-                text="Loading..."
-                fontSize={18}
-                color="white"
+          {hasCustomPlayer ? (
+            <CustomVideoPlayer
+              videoStreamBaseUrl={videoStreamBaseUrl || ''}
+              videoId={qrCode.videoID || ''}
+              authToken={videoStreamToken}
+              hlsUrl={hlsUrl}
+              source="web"
+              onProgress={handleProgress}
+              onStateChange={handleStateChange}
+              onReady={handleReady}
+              onError={handleError}
+            />
+          ) : (
+            <div 
+              className="relative bg-black rounded-md w-full overflow-hidden"
+              style={{ aspectRatio: '16/9' }}
+            >
+              <iframe 
+                src={`https://youtube-iframe-pi.vercel.app/embed.html?videoId=${qrCode.youtubeId || qrCode.videoID}`}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="YouTube Video Player"
               />
             </div>
           )}
-          
-          <YouTubePlayer
-            videoId={youtubeVideoId}
-            onProgress={handleProgress}
-            onStateChange={handleStateChange}
-            onReady={handleReady}
-            onError={handleError}
-          />
         </div>
         
         {/* Progress info */}
@@ -152,60 +157,25 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
           {/* Thresholds info */}
           <div className="mt-4 grid grid-cols-2 gap-2">
             <div className={`p-2 rounded ${videoState.thresholds.fivePercent ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <CustomText
-                text="5% Watched"
-                fontSize={12}
-                color={videoState.thresholds.fivePercent ? 'green' : 'gray'}
-                bold={videoState.thresholds.fivePercent}
-              />
+              <CustomText text="5% تمت المشاهدة" fontSize={12} color={videoState.thresholds.fivePercent ? 'green' : 'gray'} bold={videoState.thresholds.fivePercent} />
             </div>
             <div className={`p-2 rounded ${videoState.thresholds.twentyPercent ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <CustomText
-                text="20% Watched"
-                fontSize={12}
-                color={videoState.thresholds.twentyPercent ? 'green' : 'gray'}
-                bold={videoState.thresholds.twentyPercent}
-              />
+              <CustomText text="20% تمت المشاهدة" fontSize={12} color={videoState.thresholds.twentyPercent ? 'green' : 'gray'} bold={videoState.thresholds.twentyPercent} />
             </div>
             <div className={`p-2 rounded ${videoState.thresholds.twentyFivePercent ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <CustomText
-                text="25% Watched"
-                fontSize={12}
-                color={videoState.thresholds.twentyFivePercent ? 'green' : 'gray'}
-                bold={videoState.thresholds.twentyFivePercent}
-              />
+              <CustomText text="25% تمت المشاهدة" fontSize={12} color={videoState.thresholds.twentyFivePercent ? 'green' : 'gray'} bold={videoState.thresholds.twentyFivePercent} />
             </div>
             <div className={`p-2 rounded ${videoState.thresholds.fortyPercent ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <CustomText
-                text="40% Watched"
-                fontSize={12}
-                color={videoState.thresholds.fortyPercent ? 'green' : 'gray'}
-                bold={videoState.thresholds.fortyPercent}
-              />
+              <CustomText text="40% تمت المشاهدة" fontSize={12} color={videoState.thresholds.fortyPercent ? 'green' : 'gray'} bold={videoState.thresholds.fortyPercent} />
             </div>
             <div className={`p-2 rounded ${videoState.thresholds.sixtyPercent ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <CustomText
-                text="60% Watched"
-                fontSize={12}
-                color={videoState.thresholds.sixtyPercent ? 'green' : 'gray'}
-                bold={videoState.thresholds.sixtyPercent}
-              />
+              <CustomText text="60% تمت المشاهدة" fontSize={12} color={videoState.thresholds.sixtyPercent ? 'green' : 'gray'} bold={videoState.thresholds.sixtyPercent} />
             </div>
             <div className={`p-2 rounded ${videoState.thresholds.eightyPercent ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <CustomText
-                text="80% Watched"
-                fontSize={12}
-                color={videoState.thresholds.eightyPercent ? 'green' : 'gray'}
-                bold={videoState.thresholds.eightyPercent}
-              />
+              <CustomText text="80% تمت المشاهدة" fontSize={12} color={videoState.thresholds.eightyPercent ? 'green' : 'gray'} bold={videoState.thresholds.eightyPercent} />
             </div>
             <div className={`p-2 rounded ${videoState.thresholds.ninetyFivePercent ? 'bg-green-100' : 'bg-gray-100'} col-span-2`}>
-              <CustomText
-                text="95% Watched"
-                fontSize={12}
-                color={videoState.thresholds.ninetyFivePercent ? 'green' : 'gray'}
-                bold={videoState.thresholds.ninetyFivePercent}
-              />
+              <CustomText text="95% تمت المشاهدة" fontSize={12} color={videoState.thresholds.ninetyFivePercent ? 'green' : 'gray'} bold={videoState.thresholds.ninetyFivePercent} />
             </div>
           </div>
         </div>

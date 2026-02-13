@@ -22,11 +22,11 @@ npm publish --registry=https://npm.pkg.github.com
 
 ---
 
-## الخطوة 2: تحويل مشروع موجود (مثال: tamer_shaaban)
+## الخطوة 2: تحويل مشروع موجود (مثال: tamr_shaaban)
 
 ### 2.1 تثبيت الحزمة
 ```bash
-cd /Users/saif/StudioProjects/teacher_folder/tamer_shaaban/tamer_shaaban_web_desktop
+cd /Users/saif/StudioProjects/teacher_folder/tmer_shaaban/tamr_shaaban_web_desktop
 npm install @nexwave/custom_web_desktop_package
 ```
 

@@ -1,26 +1,25 @@
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useVideoProgress } from '../../hooks/useVideoProgress';
 import { CustomButton } from '../common/CustomButton';
 import { CustomText } from '../common/CustomText';
+import { CustomVideoPlayer } from './CustomVideoPlayer';
 
 export const VideoView: React.FC = () => {
   const router = useRouter();
-  const { qrCode, resetQrCodeData } = useApp();
+  const { qrCode, config, resetQrCodeData } = useApp();
+  const { updateProgress } = useVideoProgress(qrCode);
 
-  // Handle back button click
-  // Handle back button click
-  // Handle back button click
-  // Handle back button click
-  // Handle back button click
-  // Handle back button click
-  // Handle back button click
   const handleBackClick = () => {
-    // Completely reset QR code data before navigating back
     resetQrCodeData();
-    // Navigate back to the home page
     router.push('/');
   };
+
+  // Handle progress from custom player - also save to Firebase/API
+  const handleProgress = useCallback((currentTime: number, duration: number, progressPct: number) => {
+    updateProgress(currentTime, duration);
+  }, [updateProgress]);
 
   // If no QR code or video data, redirect to home
   if (!qrCode || (!qrCode.videoID && !qrCode.youtubeId)) {
@@ -35,29 +34,32 @@ export const VideoView: React.FC = () => {
     );
   }
 
-  // Use YouTube ID from QR code, or fallback to videoID if youtubeId not available
-  const youtubeVideoId = qrCode.youtubeId || qrCode.videoID;
+  // Determine if we should use the custom HLS player or YouTube fallback
+  const videoStreamBaseUrl = config?.videoStreamBaseUrl;
+  const videoStreamToken = config?.videoStreamToken;
+  const hlsUrl = qrCode.videoModel?.hlsVideo;
+  const hasCustomPlayer = !!(videoStreamBaseUrl && qrCode.videoID) || !!hlsUrl;
 
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="bg-gray-900 text-white h-[70px] flex items-center justify-between px-4">
         <div className="flex items-center">
-        <CustomButton
-  text="رجوع"
-  onClick={handleBackClick}
-  fontSize={14}
-  textColor="white"
-  borderRadius={8}
-  padding="8px 16px"
-  bold={true}
-  className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 transition-colors duration-200"
-  iconLeft={
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-    </svg>
-  }
-/>
+          <CustomButton
+            text="رجوع"
+            onClick={handleBackClick}
+            fontSize={14}
+            textColor="white"
+            borderRadius={8}
+            padding="8px 16px"
+            bold={true}
+            className="flex items-center gap-2 bg-gray-800 hover:bg-gray-700 transition-colors duration-200"
+            iconLeft={
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            }
+          />
         </div>
         <div className="flex-1 flex justify-center">
           <CustomText
@@ -73,22 +75,34 @@ export const VideoView: React.FC = () => {
       {/* Video container */}
       <div className="flex-1 flex flex-col items-center justify-center p-4 bg-gray-100">
         <div 
-          className="relative bg-black rounded-md w-full overflow-hidden shadow-lg"
-          style={{ 
-            maxWidth: '1000px', 
-            aspectRatio: '16/9'
-          }}
+          className="w-full shadow-lg"
+          style={{ maxWidth: '1000px' }}
         >
-          <iframe 
-            src={`https://youtube-iframe-pi.vercel.app/embed.html?videoId=${youtubeVideoId}`}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            title="YouTube Video Player"
-          />
+          {hasCustomPlayer ? (
+            <CustomVideoPlayer
+              videoStreamBaseUrl={videoStreamBaseUrl || ''}
+              videoId={qrCode.videoID || ''}
+              authToken={videoStreamToken}
+              hlsUrl={hlsUrl}
+              source="web"
+              onProgress={handleProgress}
+              onError={(error) => console.error('[VideoView] Player error:', error)}
+            />
+          ) : (
+            <div 
+              className="relative bg-black rounded-md w-full overflow-hidden"
+              style={{ aspectRatio: '16/9' }}
+            >
+              <iframe 
+                src={`https://youtube-iframe-pi.vercel.app/embed.html?videoId=${qrCode.youtubeId || qrCode.videoID}`}
+                className="w-full h-full border-0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="YouTube Video Player"
+              />
+            </div>
+          )}
         </div>
-        
-    
       </div>
     </div>
   );

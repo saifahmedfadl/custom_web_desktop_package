@@ -4,6 +4,7 @@ export { LoginView } from './components/login/LoginView';
 export { QrCodeDisplay } from './components/login/QrCodeDisplay';
 
 // Video Components
+export { CustomVideoPlayer } from './components/video/CustomVideoPlayer';
 export { VideoView } from './components/video/VideoView';
 
 // Common Components
@@ -19,6 +20,7 @@ export { useQrCode } from './hooks/useQrCode';
 export { useVideoProgress } from './hooks/useVideoProgress';
 
 // Services
+export { analyticsService } from './services/analytics';
 export { apiService } from './services/api';
 export { firebaseService } from './services/firebase';
 export { networkService } from './services/network';
@@ -29,4 +31,5 @@ export { containsRTL, formatPercentage, formatText, formatTime } from './utils/f
 
 // Models
 export type { AppConfig, QrModelWindows, StudentData, WindowsVersion } from './models/QrModel';
-export type { VideoProgress, VideoState, VideoThresholds } from './models/VideoModel';
+export type { AnalyticsEvent, AnalyticsEventType, QualityLevel, ServerAnalyticsConfig, VideoProgress, VideoState, VideoThresholds } from './models/VideoModel';
+

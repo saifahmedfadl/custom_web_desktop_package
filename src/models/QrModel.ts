@@ -44,4 +44,6 @@ export interface AppConfig {
   logo?: string; // Path to logo image
   backgroundImage?: string; // Path to background image
   version?: string; // App version
+  videoStreamBaseUrl?: string; // Base URL for video-stream server (e.g. https://videostream.nexwavetec.com)
+  videoStreamToken?: string; // Auth token for video-stream API
 } 
