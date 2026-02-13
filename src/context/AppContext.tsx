@@ -135,8 +135,8 @@ export const AppProvider: React.FC<{
           // Check if we have a valid video to watch
           const hasVideoUrl = response.videoUrl && response.videoUrl.length > 0;
           const hasYoutubeId = response.youtubeId && response.youtubeId.length > 0;
-          const hasHlsVideo = response.videoModel?.hlsVideo && response.videoModel.hlsVideo.length > 0;
-          const hasWebmVideo = response.videoModel?.webmVideo && response.videoModel.webmVideo.length > 0;
+          const hasHlsVideo = (response.videoModel?.hlsVideo && response.videoModel.hlsVideo.length > 0) || (response.videoModel?.hls_video && response.videoModel.hls_video.length > 0);
+          const hasWebmVideo = (response.videoModel?.webmVideo && response.videoModel.webmVideo.length > 0) || (response.videoModel?.webm_video && response.videoModel.webm_video.length > 0);
 
           if (hasVideoUrl || hasYoutubeId || hasHlsVideo || hasWebmVideo) {
             console.log('Valid video found - cancelling polling');

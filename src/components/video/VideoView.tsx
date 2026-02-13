@@ -36,9 +36,10 @@ export const VideoView: React.FC = () => {
 
   // Determine if we should use the custom HLS player or YouTube fallback
   // Only use custom player when we have an actual HLS URL from the QR data
+  // Cloud Function saves videoModel with snake_case keys (hls_video), so check both
   const videoStreamBaseUrl = config?.videoStreamBaseUrl;
   const videoStreamToken = config?.videoStreamToken;
-  const hlsUrl = qrCode.videoModel?.hlsVideo;
+  const hlsUrl = qrCode.videoModel?.hlsVideo || qrCode.videoModel?.hls_video;
   const hasHlsVideo = !!hlsUrl && hlsUrl.length > 0;
   const hasCustomPlayer = hasHlsVideo;
 

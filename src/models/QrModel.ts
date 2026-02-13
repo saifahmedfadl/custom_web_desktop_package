@@ -10,7 +10,12 @@ export interface QrModelWindows {
   videoName?: string;
   videoModel?: {
     hlsVideo?: string;
+    hls_video?: string;
     webmVideo?: string;
+    webm_video?: string;
+    youtube_url?: string;
+    title?: string;
+    subtitle?: string;
   };
   videoQualitiesHLS?: any[];
   videoQualitiesVideoAndAudio?: any[];

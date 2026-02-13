@@ -69,8 +69,8 @@ export const useQrCode = () => {
     
     const hasVideoUrl = qrCode.videoUrl && qrCode.videoUrl.length > 0;
     const hasYoutubeId = qrCode.youtubeId && qrCode.youtubeId.length > 0;
-    const hasHlsVideo = qrCode.videoModel?.hlsVideo && qrCode.videoModel.hlsVideo.length > 0;
-    const hasWebmVideo = qrCode.videoModel?.webmVideo && qrCode.videoModel.webmVideo.length > 0;
+    const hasHlsVideo = (qrCode.videoModel?.hlsVideo && qrCode.videoModel.hlsVideo.length > 0) || (qrCode.videoModel?.hls_video && qrCode.videoModel.hls_video.length > 0);
+    const hasWebmVideo = (qrCode.videoModel?.webmVideo && qrCode.videoModel.webmVideo.length > 0) || (qrCode.videoModel?.webm_video && qrCode.videoModel.webm_video.length > 0);
     
     return hasVideoUrl || hasYoutubeId || hasHlsVideo || hasWebmVideo;
   }, [qrCode]);
