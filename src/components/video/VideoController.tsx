@@ -7,15 +7,6 @@ import { CustomButton } from '../common/CustomButton';
 import { CustomSnackBar } from '../common/CustomSnackBar';
 import { CustomText } from '../common/CustomText';
 
-/**
- * Extract video-stream server video ID from HLS URL.
- * URL format: https://videostream.nexwavetec.com/api/v1/videos/{VIDEO_ID}/stream/master.m3u8
- */
-function extractVideoStreamId(hlsUrl: string): string | null {
-  const match = hlsUrl.match(/\/videos\/([a-f0-9]+)\/stream/i);
-  return match ? match[1] : null;
-}
-
 interface VideoControllerProps {
   onBack: () => void;
 }
@@ -51,13 +42,11 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
   const hlsUrl = qrCode.videoModel?.hlsVideo || qrCode.videoModel?.hls_video;
   const hasHlsVideo = !!hlsUrl && hlsUrl.length > 0;
 
-  // Extract video-stream server ID from the HLS URL
-  const videoStreamId = hasHlsVideo ? extractVideoStreamId(hlsUrl!) : null;
-
-  // Build the iframe URL for the video-stream player (same as dashboard)
+  // Build the iframe URL for the video-stream player
+  // Pass the HLS URL directly via 'src' param — no need for player-info API call
   const playerBaseUrl = videoStreamBaseUrl.replace(/\/api\/v1$/, '');
-  const playerIframeUrl = videoStreamId
-    ? `${playerBaseUrl}/player/index.html?v=${videoStreamId}&token=${videoStreamToken}&autoplay=false&source=web`
+  const playerIframeUrl = hasHlsVideo
+    ? `${playerBaseUrl}/player/index.html?src=${encodeURIComponent(hlsUrl!)}&token=${videoStreamToken}&autoplay=false&source=web`
     : null;
 
   return (
