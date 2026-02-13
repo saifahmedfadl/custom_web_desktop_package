@@ -35,10 +35,12 @@ export const VideoView: React.FC = () => {
   }
 
   // Determine if we should use the custom HLS player or YouTube fallback
+  // Only use custom player when we have an actual HLS URL from the QR data
   const videoStreamBaseUrl = config?.videoStreamBaseUrl;
   const videoStreamToken = config?.videoStreamToken;
   const hlsUrl = qrCode.videoModel?.hlsVideo;
-  const hasCustomPlayer = !!(videoStreamBaseUrl && qrCode.videoID) || !!hlsUrl;
+  const hasHlsVideo = !!hlsUrl && hlsUrl.length > 0;
+  const hasCustomPlayer = hasHlsVideo;
 
   return (
     <div className="flex flex-col h-screen">

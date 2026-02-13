@@ -68,7 +68,8 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
   const videoStreamBaseUrl = config?.videoStreamBaseUrl;
   const videoStreamToken = config?.videoStreamToken;
   const hlsUrl = qrCode.videoModel?.hlsVideo;
-  const hasCustomPlayer = !!(videoStreamBaseUrl && qrCode.videoID) || !!hlsUrl;
+  const hasHlsVideo = !!hlsUrl && hlsUrl.length > 0;
+  const hasCustomPlayer = hasHlsVideo;
 
   return (
     <div className="flex flex-col h-full">
