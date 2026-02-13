@@ -1,12 +1,20 @@
 import { useRouter } from 'next/navigation';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useVideoProgress } from '../../hooks/useVideoProgress';
 import { formatPercentage, formatTime } from '../../utils/formatting';
 import { CustomButton } from '../common/CustomButton';
 import { CustomSnackBar } from '../common/CustomSnackBar';
 import { CustomText } from '../common/CustomText';
-import { CustomVideoPlayer } from './CustomVideoPlayer';
+
+/**
+ * Extract video-stream server video ID from HLS URL.
+ * URL format: https://videostream.nexwavetec.com/api/v1/videos/{VIDEO_ID}/stream/master.m3u8
+ */
+function extractVideoStreamId(hlsUrl: string): string | null {
+  const match = hlsUrl.match(/\/videos\/([a-f0-9]+)\/stream/i);
+  return match ? match[1] : null;
+}
 
 interface VideoControllerProps {
   onBack: () => void;
@@ -15,7 +23,7 @@ interface VideoControllerProps {
 export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
   const router = useRouter();
   const { qrCode, config } = useApp();
-  const { videoState, updateProgress, setPlaying, setLoading, setError } = useVideoProgress(qrCode);
+  const { videoState } = useVideoProgress(qrCode);
   const [showMessage, setShowMessage] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -24,34 +32,6 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
       router.push('/');
     }
   }, [qrCode, router]);
-
-  const handleProgress = useCallback((currentTime: number, duration: number, progressPct: number) => {
-    updateProgress(currentTime, duration);
-  }, [updateProgress]);
-
-  const handleStateChange = useCallback((state: 'playing' | 'paused' | 'buffering' | 'ended' | 'error') => {
-    setPlaying(state === 'playing');
-    setLoading(state === 'buffering');
-    
-    if (state === 'ended') {
-      showNotification('اكتمل الفيديو');
-    }
-  }, [setPlaying, setLoading]);
-
-  const handleReady = useCallback((duration: number) => {
-    setLoading(false);
-  }, [setLoading]);
-
-  const handleError = useCallback((error: string) => {
-    setError(error);
-    showNotification(`خطأ: ${error}`);
-  }, [setError]);
-
-  const showNotification = (msg: string) => {
-    setMessage(msg);
-    setShowMessage(true);
-    setTimeout(() => setShowMessage(false), 3000);
-  };
 
   if (!qrCode || !qrCode.videoID) {
     return (
@@ -65,11 +45,20 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
     );
   }
 
-  const videoStreamBaseUrl = config?.videoStreamBaseUrl;
-  const videoStreamToken = config?.videoStreamToken;
+  // Check for HLS video (Cloud Function saves with snake_case keys)
+  const videoStreamBaseUrl = config?.videoStreamBaseUrl || 'https://videostream.nexwavetec.com';
+  const videoStreamToken = config?.videoStreamToken || '';
   const hlsUrl = qrCode.videoModel?.hlsVideo || qrCode.videoModel?.hls_video;
   const hasHlsVideo = !!hlsUrl && hlsUrl.length > 0;
-  const hasCustomPlayer = hasHlsVideo;
+
+  // Extract video-stream server ID from the HLS URL
+  const videoStreamId = hasHlsVideo ? extractVideoStreamId(hlsUrl!) : null;
+
+  // Build the iframe URL for the video-stream player (same as dashboard)
+  const playerBaseUrl = videoStreamBaseUrl.replace(/\/api\/v1$/, '');
+  const playerIframeUrl = videoStreamId
+    ? `${playerBaseUrl}/player/index.html?v=${videoStreamId}&token=${videoStreamToken}&autoplay=false&source=web`
+    : null;
 
   return (
     <div className="flex flex-col h-full">
@@ -99,23 +88,19 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
           className="w-full"
           style={{ maxWidth: '1000px' }}
         >
-          {hasCustomPlayer ? (
-            <CustomVideoPlayer
-              videoStreamBaseUrl={videoStreamBaseUrl || ''}
-              videoId={qrCode.videoID || ''}
-              authToken={videoStreamToken}
-              hlsUrl={hlsUrl}
-              source="web"
-              onProgress={handleProgress}
-              onStateChange={handleStateChange}
-              onReady={handleReady}
-              onError={handleError}
-            />
-          ) : (
-            <div 
-              className="relative bg-black rounded-md w-full overflow-hidden"
-              style={{ aspectRatio: '16/9' }}
-            >
+          <div 
+            className="relative bg-black rounded-md w-full overflow-hidden"
+            style={{ aspectRatio: '16/9' }}
+          >
+            {playerIframeUrl ? (
+              <iframe
+                src={playerIframeUrl}
+                className="w-full h-full border-0"
+                allowFullScreen
+                allow="autoplay; encrypted-media; picture-in-picture"
+                title="Video Player"
+              />
+            ) : (
               <iframe 
                 src={`https://youtube-iframe-pi.vercel.app/embed.html?videoId=${qrCode.youtubeId || qrCode.videoID}`}
                 className="w-full h-full border-0"
@@ -123,8 +108,8 @@ export const VideoController: React.FC<VideoControllerProps> = ({ onBack }) => {
                 allowFullScreen
                 title="YouTube Video Player"
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
         
         {/* Progress info */}

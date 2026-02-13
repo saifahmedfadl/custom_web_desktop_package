@@ -1,25 +1,26 @@
 import { useRouter } from 'next/navigation';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { useApp } from '../../context/AppContext';
-import { useVideoProgress } from '../../hooks/useVideoProgress';
 import { CustomButton } from '../common/CustomButton';
 import { CustomText } from '../common/CustomText';
-import { CustomVideoPlayer } from './CustomVideoPlayer';
+
+/**
+ * Extract video-stream server video ID from HLS URL.
+ * URL format: https://videostream.nexwavetec.com/api/v1/videos/{VIDEO_ID}/stream/master.m3u8
+ */
+function extractVideoStreamId(hlsUrl: string): string | null {
+  const match = hlsUrl.match(/\/videos\/([a-f0-9]+)\/stream/i);
+  return match ? match[1] : null;
+}
 
 export const VideoView: React.FC = () => {
   const router = useRouter();
   const { qrCode, config, resetQrCodeData } = useApp();
-  const { updateProgress } = useVideoProgress(qrCode);
 
   const handleBackClick = () => {
     resetQrCodeData();
     router.push('/');
   };
-
-  // Handle progress from custom player - also save to Firebase/API
-  const handleProgress = useCallback((currentTime: number, duration: number, progressPct: number) => {
-    updateProgress(currentTime, duration);
-  }, [updateProgress]);
 
   // If no QR code or video data, redirect to home
   if (!qrCode || (!qrCode.videoID && !qrCode.youtubeId)) {
@@ -34,14 +35,20 @@ export const VideoView: React.FC = () => {
     );
   }
 
-  // Determine if we should use the custom HLS player or YouTube fallback
-  // Only use custom player when we have an actual HLS URL from the QR data
-  // Cloud Function saves videoModel with snake_case keys (hls_video), so check both
-  const videoStreamBaseUrl = config?.videoStreamBaseUrl;
-  const videoStreamToken = config?.videoStreamToken;
+  // Check for HLS video (Cloud Function saves with snake_case keys)
+  const videoStreamBaseUrl = config?.videoStreamBaseUrl || 'https://videostream.nexwavetec.com';
+  const videoStreamToken = config?.videoStreamToken || '';
   const hlsUrl = qrCode.videoModel?.hlsVideo || qrCode.videoModel?.hls_video;
   const hasHlsVideo = !!hlsUrl && hlsUrl.length > 0;
-  const hasCustomPlayer = hasHlsVideo;
+
+  // Extract video-stream server ID from the HLS URL
+  const videoStreamId = hasHlsVideo ? extractVideoStreamId(hlsUrl!) : null;
+
+  // Build the iframe URL for the video-stream player (same as dashboard)
+  const playerBaseUrl = videoStreamBaseUrl.replace(/\/api\/v1$/, '');
+  const playerIframeUrl = videoStreamId
+    ? `${playerBaseUrl}/player/index.html?v=${videoStreamId}&token=${videoStreamToken}&autoplay=false&source=web`
+    : null;
 
   return (
     <div className="flex flex-col h-screen">
@@ -81,21 +88,19 @@ export const VideoView: React.FC = () => {
           className="w-full shadow-lg"
           style={{ maxWidth: '1000px' }}
         >
-          {hasCustomPlayer ? (
-            <CustomVideoPlayer
-              videoStreamBaseUrl={videoStreamBaseUrl || ''}
-              videoId={qrCode.videoID || ''}
-              authToken={videoStreamToken}
-              hlsUrl={hlsUrl}
-              source="web"
-              onProgress={handleProgress}
-              onError={(error) => console.error('[VideoView] Player error:', error)}
-            />
-          ) : (
-            <div 
-              className="relative bg-black rounded-md w-full overflow-hidden"
-              style={{ aspectRatio: '16/9' }}
-            >
+          <div 
+            className="relative bg-black rounded-md w-full overflow-hidden"
+            style={{ aspectRatio: '16/9' }}
+          >
+            {playerIframeUrl ? (
+              <iframe
+                src={playerIframeUrl}
+                className="w-full h-full border-0"
+                allowFullScreen
+                allow="autoplay; encrypted-media; picture-in-picture"
+                title="Video Player"
+              />
+            ) : (
               <iframe 
                 src={`https://youtube-iframe-pi.vercel.app/embed.html?videoId=${qrCode.youtubeId || qrCode.videoID}`}
                 className="w-full h-full border-0"
@@ -103,8 +108,8 @@ export const VideoView: React.FC = () => {
                 allowFullScreen
                 title="YouTube Video Player"
               />
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
