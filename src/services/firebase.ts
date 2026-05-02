@@ -1,7 +1,6 @@
 import { FirebaseApp, getApps, initializeApp } from 'firebase/app';
 import {
   Firestore,
-  Timestamp,
   Unsubscribe,
   collection,
   doc,
@@ -9,7 +8,6 @@ import {
   getFirestore,
   increment,
   onSnapshot,
-  serverTimestamp,
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
@@ -204,7 +202,7 @@ class FirebaseService {
               subtitle,
               maxPercent,
               totalWatchSeconds,
-              lastWatchedAt: serverTimestamp() as unknown as Timestamp,
+              lastWatchedAt: new Date().toISOString(),
               timeFinish: legacyThresholds,
             },
           },
