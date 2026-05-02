@@ -55,6 +55,10 @@ export const useVideoProgress = (videoData: QrModelWindows | null) => {
   // not trigger React re-renders — only the periodic flush touches Firestore.
   const maxPercentRef = useRef<number>(0);
   const totalWatchSecondsRef = useRef<number>(0);
+  // Sub-second buffer — see Flutter `_watchMsRemainder`. The video iframe
+  // postMessages every ~250ms; without this we'd `Math.floor` each delta to 0
+  // and `totalWatchSeconds` would never advance (the bug we hit on Android).
+  const watchMsRemainderRef = useRef<number>(0);
   const lastTrackedPositionRef = useRef<number | null>(null);
   const lastTickWallTimeRef = useRef<number | null>(null);
   const hasUnsavedProgressRef = useRef<boolean>(false);
@@ -153,17 +157,21 @@ export const useVideoProgress = (videoData: QrModelWindows | null) => {
       const posDeltaMs = (currentTime - lastPos) * 1000;
       const wallDeltaMs = now - lastWall;
 
-      // Normal playback delta: position advanced between 200ms and 2s,
-      // and matches wall-clock progress within 1 second (allowing buffering).
+      // Normal playback delta: position advanced (any positive amount up
+      // to ~2s) and matches wall-clock progress within 1 second. We accept
+      // sub-200ms deltas now and buffer them across ticks; the previous
+      // ">200ms" floor caused most player ticks to be discarded entirely.
       const isNormalPlayback =
-        posDeltaMs > 200 &&
+        posDeltaMs > 0 &&
         posDeltaMs <= 2000 &&
         Math.abs(posDeltaMs - wallDeltaMs) < 1000;
 
       if (isNormalPlayback) {
-        const addedSeconds = Math.floor(posDeltaMs / 1000);
-        if (addedSeconds > 0) {
+        watchMsRemainderRef.current += posDeltaMs;
+        if (watchMsRemainderRef.current >= 1000) {
+          const addedSeconds = Math.floor(watchMsRemainderRef.current / 1000);
           totalWatchSecondsRef.current += addedSeconds;
+          watchMsRemainderRef.current -= addedSeconds * 1000;
           hasUnsavedProgressRef.current = true;
         }
       }
