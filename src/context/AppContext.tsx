@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { AppConfig, QrModelWindows } from '../models/QrModel';
-import { apiService } from '../services/api';
+import { apiService, QrEventSubscription } from '../services/api';
 import { getDeviceId } from '../utils/device';
 
 interface AppContextType {
@@ -14,17 +14,16 @@ interface AppContextType {
   setQrCode: (qrCode: QrModelWindows) => void;
   createQrCode: () => Promise<QrModelWindows | null>;
   retryConnection: () => void;
-  resetQrCodeData: () => void; // New function to completely reset QR data
-  //checkVersion: () => Promise<{updateRequired: boolean, url: string} | null>;
+  resetQrCodeData: () => void;
 }
 
 const defaultConfig: AppConfig = {
   primaryColor: '#000000',
-  initializeFirebase: () => {}, // Keeping for compatibility, but won't use it
+  initializeFirebase: () => {},
   watchedOffline: false,
   nameAdmin: 'Teacher App',
   baseUrl: '',
-  usingApi: true, // Always use API as per requirements
+  usingApi: true,
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -33,7 +32,7 @@ export const AppProvider: React.FC<{
   children: ReactNode;
   initialConfig?: Partial<AppConfig>;
 }> = ({ children, initialConfig }) => {
-  const [config, ] = useState<AppConfig>({
+  const [config] = useState<AppConfig>({
     ...defaultConfig,
     ...initialConfig,
   });
@@ -41,54 +40,74 @@ export const AppProvider: React.FC<{
   const [qrCode, setQrCode] = useState<QrModelWindows | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [pollingTimer, setPollingTimer] = useState<NodeJS.Timeout | null>(null);
-  const retryCountRef = useRef<number>(0);
-  const MAX_RETRIES = 10;
+
+  // Holds the live Firestore onSnapshot subscription. We keep this in a
+  // ref (not state) because closing it must be synchronous — closing it
+  // through a state update would race with React batching.
+  const subscriptionRef = useRef<QrEventSubscription | null>(null);
+
+  const closeSubscription = useCallback(() => {
+    if (subscriptionRef.current) {
+      subscriptionRef.current.close();
+      subscriptionRef.current = null;
+    }
+  }, []);
+
+  // Subscribe (or re-subscribe) to QR updates for a given QR id.
+  // Idempotent: closes any existing subscription first, so callers
+  // (createQrCode, retryConnection) don't have to manage that.
+  const subscribeToQr = useCallback((qrId: string) => {
+    closeSubscription();
+
+    subscriptionRef.current = apiService.subscribeToQrUpdates(qrId, {
+      onUpdate: (data) => {
+        setQrCode(data);
+      },
+      onDone: (data) => {
+        setQrCode(data);
+        closeSubscription();
+      },
+      onTimeout: () => {
+        // No-op for the Firestore onSnapshot backend (kept for backward
+        // compat with the previous SSE implementation). Firestore listeners
+        // don't have a server-side stream timeout; the SDK reconnects
+        // transparently across network drops.
+        setError('تم انتهاء وقت الاتصال');
+        closeSubscription();
+      },
+      onError: (err) => {
+        console.error('qr subscription error:', err);
+        setError('تم انتهاء وقت الاتصال');
+        closeSubscription();
+      },
+    });
+  }, [closeSubscription]);
 
   useEffect(() => {
-    // Initialize device ID
-     // Initialize API service
-     if (config.baseUrl) {
+    if (config.baseUrl) {
       apiService.initialize(config.baseUrl);
     }
-    const id =  getDeviceId();
+    const id = getDeviceId();
     setDeviceId(id);
 
-   
-
-    // Cleanup polling timer when component unmounts
     return () => {
-      if (pollingTimer) {
-        clearInterval(pollingTimer);
-      }
+      closeSubscription();
     };
-  }, [config, pollingTimer]);
-  
-  // إنشاء useEffect منفصل لإنشاء رمز QR مرة واحدة عند تعيين معرف الجهاز
-  useEffect(() => {
-    if (deviceId) {
-      
-      createQrCode();
-    }
-  }, [deviceId,]); // يعتمد فقط على تغيير معرف الجهاز
- 
+  }, [config, closeSubscription]);
 
-  const createQrCode = async (): Promise<QrModelWindows | null> => {
+  const createQrCode = useCallback(async (): Promise<QrModelWindows | null> => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const qrData = await apiService.createQrCode(deviceId);
-      
+
       if (!qrData || !qrData.id) {
         throw new Error('Failed to create QR code');
       }
-      
+
       setQrCode(qrData);
-      
-      // Start polling for updates after creating QR code
-      startPolling(qrData.id);
-      
+      subscribeToQr(qrData.id);
       return qrData;
     } catch (err) {
       console.error('Error creating QR code app context', err);
@@ -97,108 +116,34 @@ export const AppProvider: React.FC<{
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [deviceId, subscribeToQr]);
 
-  const startPolling = (qrId: string) => {
-    // Clear any existing polling timer
-    if (pollingTimer) {
-      clearInterval(pollingTimer);
+  // Auto-create the first QR once we know the device id. We intentionally
+  // depend only on deviceId — recreating it on every context re-render
+  // would spawn duplicate QR docs.
+  useEffect(() => {
+    if (deviceId) {
+      createQrCode();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deviceId]);
 
-    retryCountRef.current = 0;
-
-    // Start a new polling timer
-    const timer = setInterval(async () => {
-      // If max retries reached, stop polling
-      if (retryCountRef.current >= MAX_RETRIES) {
-        console.log(`Reached maximum retry count (${MAX_RETRIES}), stopping polling`);
-        clearInterval(timer);
-        setPollingTimer(null);
-        setError('تم انتهاء وقت الاتصال');
-        return;
-      }
-
-      try {
-        // Increment the count using the ref
-        retryCountRef.current += 1;
-        console.log(`Polling attempt ${retryCountRef.current} of ${MAX_RETRIES} for QR ID: ${qrId}`);
-
-        const response = await apiService.getQrCodeStatus(qrId);
-
-        console.log(
-          `Received response from getQrData: ${response ? 'Data received' : 'No data'}`
-        );
-
-        if (response) {
-          setQrCode(response);
-
-          // Check if we have a valid video to watch
-          const hasVideoUrl = response.videoUrl && response.videoUrl.length > 0;
-          const hasYoutubeId = response.youtubeId && response.youtubeId.length > 0;
-          const hasHlsVideo = (response.videoModel?.hlsVideo && response.videoModel.hlsVideo.length > 0) || (response.videoModel?.hls_video && response.videoModel.hls_video.length > 0);
-          const hasWebmVideo = (response.videoModel?.webmVideo && response.videoModel.webmVideo.length > 0) || (response.videoModel?.webm_video && response.videoModel.webm_video.length > 0);
-
-          if (hasVideoUrl || hasYoutubeId || hasHlsVideo || hasWebmVideo) {
-            console.log('Valid video found - cancelling polling');
-            clearInterval(timer);
-            setPollingTimer(null);
-            retryCountRef.current = 0;
-            // Navigation to video view will be handled by the component using this data
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Polling error:', err);
-
-        // Implement exponential backoff for network errors
-        const isNetworkError = String(err).includes('network') || 
-                               String(err).includes('connection') ||
-                               String(err).includes('timeout');
-
-        if (isNetworkError) {
-          const backoffSeconds = retryCountRef.current < 5 ? 5 : (retryCountRef.current < 10 ? 10 : 15);
-          console.log(`Network error detected. Will retry in ${backoffSeconds} seconds`);
-
-          // Cancel current timer
-          clearInterval(timer);
-          setPollingTimer(null);
-
-          // Only restart if not at max retries
-          if (retryCountRef.current < MAX_RETRIES) {
-            setTimeout(() => {
-              if (!error) {
-                startPolling(qrId);
-              }
-            }, backoffSeconds * 1000);
-          } else {
-            setError('تم انتهاء وقت الاتصال');
-          }
-        }
-      }
-    }, 5000); // Poll every 5 seconds
-
-    setPollingTimer(timer);
-  };
-
-  const retryConnection = () => {
+  // Reconnect on the SAME QR id without spawning a new doc. Used when
+  // the user taps retry after a transient subscription error.
+  const retryConnection = useCallback(() => {
     setError(null);
-    if (pollingTimer) {
-      clearInterval(pollingTimer);
-      setPollingTimer(null);
+    if (qrCode?.id) {
+      subscribeToQr(qrCode.id);
+    } else {
+      // No QR yet (initial create failed). Fall back to creating one.
+      createQrCode();
     }
-    retryCountRef.current = 0;
-    createQrCode();
-  };
+  }, [qrCode, subscribeToQr, createQrCode]);
 
-  // Function to completely reset QR code data
-  const resetQrCodeData = () => {
-    // Clear any ongoing polling
-    if (pollingTimer) {
-      clearInterval(pollingTimer);
-      setPollingTimer(null);
-    }
-    
-    // Reset QR code data with empty values to ensure no video can be detected
+  // Hard reset — used when the caller explicitly wants a brand-new QR
+  // (e.g. after a successful video session ends).
+  const resetQrCodeData = useCallback(() => {
+    closeSubscription();
     setQrCode({
       id: '',
       videoID: '',
@@ -206,15 +151,12 @@ export const AppProvider: React.FC<{
       videoUrl: '',
       videoName: '',
       subtitle: '',
-      videoModel: { hlsVideo: '', webmVideo: '' }
+      videoModel: { hlsVideo: '', webmVideo: '' },
     } as QrModelWindows);
-    
     setError(null);
-    retryCountRef.current = 0;
     setIsLoading(false);
     createQrCode();
-    
-  };
+  }, [closeSubscription, createQrCode]);
 
   const value: AppContextType = {
     config,
@@ -226,7 +168,6 @@ export const AppProvider: React.FC<{
     createQrCode,
     retryConnection,
     resetQrCodeData,
-    // checkVersion,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
@@ -234,16 +175,14 @@ export const AppProvider: React.FC<{
 
 export const useApp = (): AppContextType => {
   const context = useContext(AppContext);
-  
+
   if (context === undefined) {
     throw new Error('useApp must be used within an AppProvider');
   }
-  
+
   return context;
 };
 
 export const initializeDesktopTeacher = (config: Partial<AppConfig>): void => {
-  // This function will be exported from the package for initialization
-  // We're not using Firebase initialization as per requirements
   console.log('Desktop Teacher app initialized with config:', config);
-}; 
+};

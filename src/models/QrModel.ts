@@ -21,10 +21,19 @@ export interface QrModelWindows {
   videoQualitiesVideoAndAudio?: any[];
 }
 
+/**
+ * Mirrors Flutter `SeenVideoModel`. v2 fields (`maxPercent`,
+ * `totalWatchSeconds`, `lastWatchedAt`) are written by the new client; older
+ * entries may only have `timeFinish` / `entryCounter`.
+ */
 export interface VideoProgress {
-  entryCounter: number;
-  timeFinish: string[];
-  subtitle: string;
+  entryCounter?: number;
+  timeFinish?: string[];
+  subtitle?: string;
+  // v2 tracking
+  maxPercent?: number;
+  totalWatchSeconds?: number;
+  lastWatchedAt?: unknown; // Firestore Timestamp on the server side
 }
 
 export interface StudentData {

@@ -22,7 +22,9 @@ export { useVideoProgress } from './hooks/useVideoProgress';
 // Services
 export { analyticsService } from './services/analytics';
 export { apiService } from './services/api';
+export type { QrEventHandlers, QrEventSubscription } from './services/api';
 export { firebaseService } from './services/firebase';
+export type { FirebaseWebConfig } from './services/firebase';
 export { networkService } from './services/network';
 
 // Utils

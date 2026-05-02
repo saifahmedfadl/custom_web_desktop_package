@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { useVideoProgress } from '../../hooks/useVideoProgress';
 import { CustomButton } from '../common/CustomButton';
 import { CustomText } from '../common/CustomText';
 
@@ -8,7 +9,16 @@ export const VideoView: React.FC = () => {
   const router = useRouter();
   const { qrCode, config, resetQrCodeData } = useApp();
 
-  const handleBackClick = () => {
+  // Mounting the hook here registers the postMessage listener and ensures
+  // a final flush fires on unmount / page-close, mirroring Flutter's
+  // VideoController.onClose. If the embedded iframe ever sends progress
+  // events, they'll be picked up automatically.
+  const { flushProgress } = useVideoProgress(qrCode);
+
+  const handleBackClick = async () => {
+    // Best-effort flush before tearing down the view so the last few seconds
+    // of watch time are not lost.
+    try { await flushProgress(); } catch { /* noop */ }
     resetQrCodeData();
     router.push('/');
   };
