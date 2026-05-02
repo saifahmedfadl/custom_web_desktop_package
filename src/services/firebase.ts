@@ -4,6 +4,7 @@ import {
   Unsubscribe,
   collection,
   doc,
+  getDoc,
   getDocs,
   getFirestore,
   increment,
@@ -12,6 +13,20 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { QrModelWindows, WindowsVersion } from '../models/QrModel';
+
+/**
+ * Guard against the bug where the host app passes a timing/epoch number
+ * (e.g. `Date.now()`) as the videoId and corrupts the student's
+ * `seenVideos` map. Real Firestore document ids are 20-char alphanumeric
+ * strings (Firestore auto-id) — anything that's purely 12+ digits is
+ * almost certainly a millisecond/microsecond timestamp.
+ */
+function isValidVideoId(videoId: string | undefined | null): videoId is string {
+  if (!videoId) return false;
+  if (typeof videoId !== 'string') return false;
+  if (/^\d{12,}$/.test(videoId)) return false;
+  return true;
+}
 
 /**
  * Firebase web SDK config — same shape Firebase emits for any web app.
@@ -151,13 +166,59 @@ class FirebaseService {
   }
 
   /**
+   * Mirrors Flutter `checkFirstOne` — creates the seenVideos entry with the
+   * full set of fields (idVideo, titleVideo, subtitle, time, timeFinish:['0'],
+   * entryCounter:0) on first watch. Skipped if an entry already exists so
+   * we never clobber existing progress.
+   */
+  async ensureVideoEntry(
+    userUuid: string,
+    videoId: string,
+    videoTitle: string,
+    subtitle: string,
+  ): Promise<boolean> {
+    if (!userUuid || !isValidVideoId(videoId)) return false;
+    try {
+      const db = await this.ensureReady();
+      const studentRef = doc(db, 'student', userUuid);
+      const snap = await getDoc(studentRef);
+      const existing = (snap.exists() ? snap.data() : null) as
+        | { seenVideos?: Record<string, unknown> }
+        | null;
+      if (existing?.seenVideos && existing.seenVideos[videoId]) {
+        return true;
+      }
+      await setDoc(
+        studentRef,
+        {
+          seenVideos: {
+            [videoId]: {
+              idVideo: videoId,
+              titleVideo: videoTitle,
+              subtitle,
+              entryCounter: 0,
+              timeFinish: ['0'],
+              time: new Date().toISOString(),
+            },
+          },
+        },
+        { merge: true },
+      );
+      return true;
+    } catch (error) {
+      console.error('Error ensuring video entry', error);
+      return false;
+    }
+  }
+
+  /**
    * Session-start signal: bumps `seenVideos.<videoId>.entryCounter` by 1.
    * Mirrors the Flutter `increaseEntryCounter` flow — fired once per video
    * session after the student has been on the page long enough to count as
    * a real view (the caller is responsible for the 4-minute delay).
    */
   async incrementVideoEntryCounter(userUuid: string, videoId: string): Promise<boolean> {
-    if (!userUuid || !videoId) return false;
+    if (!userUuid || !isValidVideoId(videoId)) return false;
     try {
       const db = await this.ensureReady();
       const studentRef = doc(db, 'student', userUuid);
@@ -189,7 +250,7 @@ class FirebaseService {
     totalWatchSeconds: number,
     legacyThresholds: string[],
   ): Promise<boolean> {
-    if (!userUuid || !videoId) return false;
+    if (!userUuid || !isValidVideoId(videoId)) return false;
 
     try {
       const db = await this.ensureReady();

@@ -249,6 +249,35 @@ export const useVideoProgress = (videoData: QrModelWindows | null) => {
     });
   }, []);
 
+  // ===================== first-watch entry seed =====================
+  // Mirrors Flutter `checkFirstOne`: when a student opens a video for the
+  // first time, seed the seenVideos entry with the full set of fields
+  // (idVideo, titleVideo, subtitle, time, timeFinish:['0']) so teacher-side
+  // aggregation queries (`where('seenVideos.<id>.idVideo', isEqualTo: id)`)
+  // can find the entry. Without this, the first writer is the periodic
+  // `_flushProgress` which only sets maxPercent/totalWatchSeconds and the
+  // entry shows up missing `idVideo`/`titleVideo`.
+  useEffect(() => {
+    if (!videoData?.videoID || !videoData?.userUuid) return;
+    const userUuid = videoData.userUuid;
+    const videoId = videoData.videoID;
+    const videoTitle =
+      videoData.videoName ||
+      videoData.videoModel?.title ||
+      '';
+    const subtitle =
+      videoData.subtitle ||
+      videoData.videoModel?.subtitle ||
+      '';
+    const usingApi = config?.usingApi === true;
+
+    if (usingApi) {
+      void apiService.ensureVideoEntry(userUuid, videoId, videoTitle, subtitle);
+    } else {
+      void firebaseService.ensureVideoEntry(userUuid, videoId, videoTitle, subtitle);
+    }
+  }, [videoData?.videoID, videoData?.userUuid, config?.usingApi]);
+
   // ===================== entryCounter (session-start signal) =====================
   // Mirrors Flutter `increaseEntryCounter`: schedule a single timer 4 min
   // after the video opens; if the student is still on the page when it

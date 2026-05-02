@@ -2,6 +2,13 @@ import axios, { AxiosInstance } from 'axios';
 import { QrModelWindows } from '../models/QrModel';
 import { firebaseService } from './firebase';
 
+function isValidVideoId(videoId: string | undefined | null): videoId is string {
+  if (!videoId) return false;
+  if (typeof videoId !== 'string') return false;
+  if (/^\d{12,}$/.test(videoId)) return false;
+  return true;
+}
+
 export interface QrEventHandlers {
   onUpdate: (qr: QrModelWindows) => void;
   onDone?: (qr: QrModelWindows) => void;
@@ -185,12 +192,44 @@ class ApiService {
    */
   async incrementVideoEntryCounter(userUuid: string, videoId: string): Promise<boolean> {
     if (!this.api) return false;
+    if (!isValidVideoId(videoId)) return false;
     try {
       await this.api.post('/incrementVideoEntry', { userUuid, videoId });
       return true;
     } catch (error) {
       console.error('Error incrementing entryCounter via API', error);
       return false;
+    }
+  }
+
+  /**
+   * Mirrors Flutter `checkFirstOne` — ensures the seenVideos entry exists
+   * with full fields (idVideo, titleVideo, subtitle, time, timeFinish:['0'])
+   * before progress flushes start writing partial updates. Falls back to
+   * Firestore directly if a dedicated API endpoint isn't wired up.
+   */
+  async ensureVideoEntry(
+    userUuid: string,
+    videoId: string,
+    videoTitle: string,
+    subtitle: string,
+  ): Promise<boolean> {
+    if (!isValidVideoId(videoId)) return false;
+    if (!this.api) {
+      return firebaseService.ensureVideoEntry(userUuid, videoId, videoTitle, subtitle);
+    }
+    try {
+      await this.api.post('/ensureVideoEntry', {
+        userUuid,
+        videoId,
+        videoTitle,
+        subtitle,
+      });
+      return true;
+    } catch (error) {
+      // Fallback to direct Firestore write so we never lose the first-write
+      // shape if the API endpoint isn't deployed yet.
+      return firebaseService.ensureVideoEntry(userUuid, videoId, videoTitle, subtitle);
     }
   }
 
@@ -214,6 +253,7 @@ class ApiService {
     legacyThresholds: string[],
   ): Promise<boolean> {
     if (!this.api) return false;
+    if (!isValidVideoId(videoId)) return false;
 
     try {
       await this.api.post('/updateProgress', {
